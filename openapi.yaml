@@ -1,0 +1,1375 @@
+openapi: 3.0.3
+info:
+  title: Library Management System API
+  description: |
+    REST API for managing a library system including books, members, loans, and reservations.
+    
+    ## Features
+    - Book catalog management
+    - Member registration and management
+    - Book checkout and returns
+    - Reservation system
+    - Fine calculation
+    - Author management
+    
+    ## Authentication
+    Use JWT bearer tokens for authentication. Obtain a token via the `/auth/login` endpoint.
+  version: 1.0.0
+  contact:
+    name: API Support
+    email: support@library.example.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: https://api.library.example.com/v1
+    description: Production server
+  - url: https://staging-api.library.example.com/v1
+    description: Staging server
+  - url: http://localhost:3000/v1
+    description: Development server
+
+tags:
+  - name: Books
+    description: Book catalog operations
+  - name: Members
+    description: Library member management
+  - name: Loans
+    description: Book checkout and return operations
+  - name: Reservations
+    description: Book reservation operations
+  - name: Authors
+    description: Author information
+  - name: Authentication
+    description: User authentication
+  - name: Health
+    description: API health check
+
+paths:
+  /books:
+    get:
+      tags:
+        - Books
+      summary: List all books
+      description: Retrieve a paginated list of books with optional filtering and sorting
+      operationId: listBooks
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+        - name: search
+          in: query
+          description: Search in title, author, or ISBN
+          schema:
+            type: string
+            example: "gatsby"
+        - name: category
+          in: query
+          description: Filter by category
+          schema:
+            type: string
+            example: "Fiction"
+        - name: available
+          in: query
+          description: Filter by availability
+          schema:
+            type: boolean
+        - name: sort
+          in: query
+          description: Sort field
+          schema:
+            type: string
+            enum: [title, author, publishedDate]
+            default: title
+        - name: order
+          in: query
+          description: Sort order
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: asc
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Book'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+                  _links:
+                    $ref: '#/components/schemas/PaginationLinks'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags:
+        - Books
+      summary: Create a new book
+      description: Add a new book to the library collection (requires librarian or admin role)
+      operationId: createBook
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookCreate'
+      responses:
+        '201':
+          description: Book created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Book'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /books/{bookId}:
+    get:
+      tags:
+        - Books
+      summary: Get book by ID
+      description: Retrieve detailed information about a specific book
+      operationId: getBook
+      parameters:
+        - $ref: '#/components/parameters/BookIdParam'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Book'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    patch:
+      tags:
+        - Books
+      summary: Update book
+      description: Update book information (partial update, requires librarian or admin role)
+      operationId: updateBook
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/BookIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookUpdate'
+      responses:
+        '200':
+          description: Book updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Book'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags:
+        - Books
+      summary: Delete book
+      description: Remove a book from the collection (requires admin role)
+      operationId: deleteBook
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/BookIdParam'
+      responses:
+        '204':
+          description: Book deleted successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /members:
+    get:
+      tags:
+        - Members
+      summary: List all members
+      description: Retrieve a paginated list of library members (requires librarian or admin role)
+      operationId: listMembers
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+        - name: search
+          in: query
+          description: Search by name, email, or member number
+          schema:
+            type: string
+        - name: status
+          in: query
+          description: Filter by member status
+          schema:
+            type: string
+            enum: [active, inactive, suspended]
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Member'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+                  _links:
+                    $ref: '#/components/schemas/PaginationLinks'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+    post:
+      tags:
+        - Members
+      summary: Create a new member
+      description: Register a new library member
+      operationId: createMember
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MemberCreate'
+      responses:
+        '201':
+          description: Member created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Member'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /members/{memberId}:
+    get:
+      tags:
+        - Members
+      summary: Get member by ID
+      description: Retrieve detailed information about a specific member
+      operationId: getMember
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/MemberIdParam'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Member'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    patch:
+      tags:
+        - Members
+      summary: Update member
+      description: Update member information (partial update)
+      operationId: updateMember
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/MemberIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MemberUpdate'
+      responses:
+        '200':
+          description: Member updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Member'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags:
+        - Members
+      summary: Deactivate member
+      description: Deactivate a library member (requires admin role)
+      operationId: deleteMember
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/MemberIdParam'
+      responses:
+        '204':
+          description: Member deactivated successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /loans:
+    get:
+      tags:
+        - Loans
+      summary: List all loans
+      description: Retrieve a paginated list of loans (requires librarian or admin role)
+      operationId: listLoans
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+        - name: memberId
+          in: query
+          description: Filter by member ID
+          schema:
+            type: string
+        - name: bookId
+          in: query
+          description: Filter by book ID
+          schema:
+            type: string
+        - name: status
+          in: query
+          description: Filter by loan status
+          schema:
+            type: string
+            enum: [active, returned, overdue]
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Loan'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+                  _links:
+                    $ref: '#/components/schemas/PaginationLinks'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+    post:
+      tags:
+        - Loans
+      summary: Create a new loan
+      description: Checkout a book to a member (requires librarian or admin role)
+      operationId: createLoan
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoanCreate'
+      responses:
+        '201':
+          description: Loan created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Loan'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /loans/{loanId}:
+    get:
+      tags:
+        - Loans
+      summary: Get loan by ID
+      description: Retrieve detailed information about a specific loan
+      operationId: getLoan
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/LoanIdParam'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Loan'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /loans/{loanId}/return:
+    post:
+      tags:
+        - Loans
+      summary: Return a book
+      description: Process a book return (requires librarian or admin role)
+      operationId: returnLoan
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/LoanIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoanReturn'
+      responses:
+        '200':
+          description: Book returned successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoanReturnResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /loans/{loanId}/renew:
+    post:
+      tags:
+        - Loans
+      summary: Renew a loan
+      description: Extend the due date of a loan
+      operationId: renewLoan
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/LoanIdParam'
+      responses:
+        '200':
+          description: Loan renewed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoanRenewResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /reservations:
+    get:
+      tags:
+        - Reservations
+      summary: List all reservations
+      description: Retrieve a paginated list of reservations
+      operationId: listReservations
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+        - name: memberId
+          in: query
+          description: Filter by member ID
+          schema:
+            type: string
+        - name: bookId
+          in: query
+          description: Filter by book ID
+          schema:
+            type: string
+        - name: status
+          in: query
+          description: Filter by reservation status
+          schema:
+            type: string
+            enum: [pending, ready, fulfilled, cancelled]
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Reservation'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+                  _links:
+                    $ref: '#/components/schemas/PaginationLinks'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags:
+        - Reservations
+      summary: Create a new reservation
+      description: Reserve a book for future checkout
+      operationId: createReservation
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReservationCreate'
+      responses:
+        '201':
+          description: Reservation created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reservation'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /reservations/{reservationId}:
+    delete:
+      tags:
+        - Reservations
+      summary: Cancel a reservation
+      description: Cancel a book reservation
+      operationId: cancelReservation
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ReservationIdParam'
+      responses:
+        '204':
+          description: Reservation cancelled successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /authors:
+    get:
+      tags:
+        - Authors
+      summary: List all authors
+      description: Retrieve a paginated list of authors
+      operationId: listAuthors
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+        - name: search
+          in: query
+          description: Search by author name
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Author'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+                  _links:
+                    $ref: '#/components/schemas/PaginationLinks'
+
+  /authors/{authorId}:
+    get:
+      tags:
+        - Authors
+      summary: Get author by ID
+      description: Retrieve detailed information about a specific author
+      operationId: getAuthor
+      parameters:
+        - $ref: '#/components/parameters/AuthorIdParam'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Author'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: User login
+      description: Authenticate a user and receive JWT tokens
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Health check
+      description: Check API health status
+      operationId: healthCheck
+      responses:
+        '200':
+          description: API is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "healthy"
+                  timestamp:
+                    type: string
+                    format: date-time
+                  version:
+                    type: string
+                    example: "1.0.0"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    PageParam:
+      name: page
+      in: query
+      description: Page number for pagination
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+
+    LimitParam:
+      name: limit
+      in: query
+      description: Number of items per page
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+
+    BookIdParam:
+      name: bookId
+      in: path
+      required: true
+      description: Unique book identifier
+      schema:
+        type: string
+        example: "book_123"
+
+    MemberIdParam:
+      name: memberId
+      in: path
+      required: true
+      description: Unique member identifier
+      schema:
+        type: string
+        example: "member_789"
+
+    LoanIdParam:
+      name: loanId
+      in: path
+      required: true
+      description: Unique loan identifier
+      schema:
+        type: string
+        example: "loan_321"
+
+    ReservationIdParam:
+      name: reservationId
+      in: path
+      required: true
+      description: Unique reservation identifier
+      schema:
+        type: string
+        example: "reservation_654"
+
+    AuthorIdParam:
+      name: authorId
+      in: path
+      required: true
+      description: Unique author identifier
+      schema:
+        type: string
+        example: "author_456"
+
+  schemas:
+    Book:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "book_123"
+        isbn:
+          type: string
+          example: "978-0-123456-78-9"
+        title:
+          type: string
+          example: "The Great Gatsby"
+        authors:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuthorReference'
+        publisher:
+          type: string
+          example: "Scribner"
+        publishedDate:
+          type: string
+          format: date
+          example: "1925-04-10"
+        categories:
+          type: array
+          items:
+            type: string
+          example: ["Fiction", "Classic Literature"]
+        totalCopies:
+          type: integer
+          example: 5
+        availableCopies:
+          type: integer
+          example: 2
+        description:
+          type: string
+        language:
+          type: string
+          example: "en"
+        pages:
+          type: integer
+          example: 180
+        coverImage:
+          type: string
+          format: uri
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        _links:
+          $ref: '#/components/schemas/ResourceLinks'
+
+    BookCreate:
+      type: object
+      required:
+        - isbn
+        - title
+        - authorIds
+        - publisher
+        - totalCopies
+      properties:
+        isbn:
+          type: string
+          example: "978-0-123456-78-9"
+        title:
+          type: string
+          example: "The Great Gatsby"
+        authorIds:
+          type: array
+          items:
+            type: string
+          example: ["author_456"]
+        publisher:
+          type: string
+          example: "Scribner"
+        publishedDate:
+          type: string
+          format: date
+        categories:
+          type: array
+          items:
+            type: string
+        totalCopies:
+          type: integer
+          minimum: 1
+        description:
+          type: string
+        language:
+          type: string
+        pages:
+          type: integer
+
+    BookUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+        authorIds:
+          type: array
+          items:
+            type: string
+        publisher:
+          type: string
+        publishedDate:
+          type: string
+          format: date
+        categories:
+          type: array
+          items:
+            type: string
+        totalCopies:
+          type: integer
+        description:
+          type: string
+        language:
+          type: string
+        pages:
+          type: integer
+
+    Member:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "member_789"
+        memberNumber:
+          type: string
+          example: "LIB2024-001234"
+        firstName:
+          type: string
+          example: "John"
+        lastName:
+          type: string
+          example: "Doe"
+        email:
+          type: string
+          format: email
+          example: "john.doe@example.com"
+        phone:
+          type: string
+          example: "+1-555-0123"
+        address:
+          $ref: '#/components/schemas/Address'
+        dateOfBirth:
+          type: string
+          format: date
+        membershipDate:
+          type: string
+          format: date
+        membershipExpiry:
+          type: string
+          format: date
+        status:
+          type: string
+          enum: [active, inactive, suspended]
+        currentLoans:
+          type: integer
+        maxLoans:
+          type: integer
+          example: 5
+        overdueBooks:
+          type: integer
+        totalFines:
+          type: number
+          format: double
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        _links:
+          $ref: '#/components/schemas/ResourceLinks'
+
+    MemberCreate:
+      type: object
+      required:
+        - firstName
+        - lastName
+        - email
+        - password
+        - dateOfBirth
+      properties:
+        firstName:
+          type: string
+        lastName:
+          type: string
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+        address:
+          $ref: '#/components/schemas/Address'
+        dateOfBirth:
+          type: string
+          format: date
+        password:
+          type: string
+          format: password
+          minLength: 8
+
+    MemberUpdate:
+      type: object
+      properties:
+        firstName:
+          type: string
+        lastName:
+          type: string
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+        address:
+          $ref: '#/components/schemas/Address'
+
+    Address:
+      type: object
+      properties:
+        street:
+          type: string
+        city:
+          type: string
+        state:
+          type: string
+        zipCode:
+          type: string
+        country:
+          type: string
+
+    Loan:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "loan_321"
+        book:
+          $ref: '#/components/schemas/BookReference'
+        member:
+          $ref: '#/components/schemas/MemberReference'
+        checkoutDate:
+          type: string
+          format: date-time
+        dueDate:
+          type: string
+          format: date-time
+        returnDate:
+          type: string
+          format: date-time
+          nullable: true
+        renewalCount:
+          type: integer
+        maxRenewals:
+          type: integer
+          example: 1
+        status:
+          type: string
+          enum: [active, returned, overdue]
+        fine:
+          type: number
+          format: double
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        _links:
+          $ref: '#/components/schemas/ResourceLinks'
+
+    LoanCreate:
+      type: object
+      required:
+        - bookId
+        - memberId
+      properties:
+        bookId:
+          type: string
+          example: "book_123"
+        memberId:
+          type: string
+          example: "member_789"
+
+    LoanReturn:
+      type: object
+      properties:
+        returnDate:
+          type: string
+          format: date-time
+        condition:
+          type: string
+          enum: [excellent, good, fair, poor, damaged]
+        notes:
+          type: string
+
+    LoanReturnResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        status:
+          type: string
+          example: "returned"
+        returnDate:
+          type: string
+          format: date-time
+        fine:
+          type: number
+          format: double
+        message:
+          type: string
+          example: "Book returned successfully"
+
+    LoanRenewResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        newDueDate:
+          type: string
+          format: date-time
+        renewalCount:
+          type: integer
+        message:
+          type: string
+          example: "Loan renewed successfully"
+
+    Reservation:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "reservation_654"
+        book:
+          $ref: '#/components/schemas/BookReference'
+        member:
+          $ref: '#/components/schemas/MemberReference'
+        reservationDate:
+          type: string
+          format: date-time
+        expiryDate:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [pending, ready, fulfilled, cancelled]
+        queuePosition:
+          type: integer
+        _links:
+          $ref: '#/components/schemas/ResourceLinks'
+
+    ReservationCreate:
+      type: object
+      required:
+        - bookId
+        - memberId
+      properties:
+        bookId:
+          type: string
+          example: "book_123"
+        memberId:
+          type: string
+          example: "member_789"
+
+    Author:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "author_456"
+        name:
+          type: string
+          example: "F. Scott Fitzgerald"
+        biography:
+          type: string
+        birthDate:
+          type: string
+          format: date
+        deathDate:
+          type: string
+          format: date
+          nullable: true
+        nationality:
+          type: string
+        bookCount:
+          type: integer
+        _links:
+          $ref: '#/components/schemas/ResourceLinks'
+
+    AuthorReference:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        _links:
+          type: object
+          properties:
+            self:
+              type: string
+
+    BookReference:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        _links:
+          type: object
+          properties:
+            self:
+              type: string
+
+    MemberReference:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        _links:
+          type: object
+          properties:
+            self:
+              type: string
+
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          example: "john.doe@example.com"
+        password:
+          type: string
+          format: password
+
+    LoginResponse:
+      type: object
+      properties:
+        accessToken:
+          type: string
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        refreshToken:
+          type: string
+        tokenType:
+          type: string
+          example: "Bearer"
+        expiresIn:
+          type: integer
+          example: 3600
+        user:
+          type: object
+          properties:
+            id:
+              type: string
+            email:
+              type: string
+            role:
+              type: string
+              enum: [member, librarian, admin]
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              example: "RESOURCE_NOT_FOUND"
+            message:
+              type: string
+              example: "The requested resource was not found"
+            details:
+              type: array
+              items:
+                type: object
+                properties:
+                  field:
+                    type: string
+                  issue:
+                    type: string
+            requestId:
+              type: string
+            timestamp:
+              type: string
+              format: date-time
+            documentation:
+              type: string
+              format: uri
+
+    Pagination:
+      type: object
+      properties:
+        page:
+          type: integer
+        limit:
+          type: integer
+        totalPages:
+          type: integer
+        totalItems:
+          type: integer
+        hasNext:
+          type: boolean
+        hasPrevious:
+          type: boolean
+
+    PaginationLinks:
+      type: object
+      properties:
+        self:
+          type: string
+        first:
+          type: string
+        previous:
+          type: string
+          nullable: true
+        next:
+          type: string
+          nullable: true
+        last:
+          type: string
+
+    ResourceLinks:
+      type: object
+      properties:
+        self:
+          type: string
+      additionalProperties:
+        type: string
+
+  responses:
+    BadRequest:
+      description: Bad request - Invalid parameters or malformed request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    Unauthorized:
+      description: Unauthorized - Missing or invalid authentication
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    Forbidden:
+      description: Forbidden - Insufficient permissions
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    NotFound:
+      description: Not found - Resource does not exist
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    Conflict:
+      description: Conflict - Request conflicts with current state
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    UnprocessableEntity:
+      description: Unprocessable entity - Validation errors
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
