@@ -50,7 +50,7 @@ Detailed in [API_DESIGN.md](API_DESIGN.md):
 ## Deliverables
 
 ### 1. Main API Design Document
-**[API_DESIGN.md](API_DESIGN.md)** - 22,235 characters
+**[API_DESIGN.md](API_DESIGN.md)** - ~22K characters (923 lines)
 - Complete REST API specification
 - All endpoint details (GET, POST, PATCH, DELETE)
 - Request/response formats with examples
@@ -62,7 +62,7 @@ Detailed in [API_DESIGN.md](API_DESIGN.md):
 - Future enhancements
 
 ### 2. OpenAPI Specification
-**[openapi.yaml](openapi.yaml)** - 34,938 characters
+**[openapi.yaml](openapi.yaml)** - ~35K characters (1,375 lines)
 - OpenAPI 3.0.3 compliant specification
 - All endpoints with parameters and schemas
 - Request/response body definitions
@@ -75,7 +75,7 @@ Detailed in [API_DESIGN.md](API_DESIGN.md):
   - Code generators for client SDKs
 
 ### 3. Use Cases Document
-**[USE_CASES.md](USE_CASES.md)** - 17,904 characters
+**[USE_CASES.md](USE_CASES.md)** - ~18K characters (890 lines)
 - Detailed workflow examples
 - Step-by-step API calls
 - Complete request/response examples
@@ -83,7 +83,7 @@ Detailed in [API_DESIGN.md](API_DESIGN.md):
 - Real-world usage patterns
 
 ### 4. Error Handling Guide
-**[ERROR_HANDLING.md](ERROR_HANDLING.md)** - 18,685 characters
+**[ERROR_HANDLING.md](ERROR_HANDLING.md)** - ~19K characters (828 lines)
 - Standard error response format
 - Complete error code catalog
 - HTTP status code usage
@@ -92,7 +92,7 @@ Detailed in [API_DESIGN.md](API_DESIGN.md):
 - Examples for each error type
 
 ### 5. README
-**[README.md](README.md)** - 7,285 characters
+**[README.md](README.md)** - ~7K characters (225 lines)
 - Project overview
 - Quick reference to all endpoints
 - Key features summary
@@ -161,7 +161,7 @@ Detailed in [API_DESIGN.md](API_DESIGN.md):
 ## Technical Highlights
 
 ### API Features
-- **39+ Endpoints** covering all CRUD operations
+- **22 Operations** across 10 endpoint paths (GET, POST, PATCH, DELETE)
 - **5 Main Resources** (Books, Members, Loans, Reservations, Authors)
 - **3 User Roles** (Member, Librarian, Admin)
 - **20+ Error Codes** for comprehensive error handling
@@ -274,7 +274,7 @@ The design is thorough, well-documented, and follows REST principles, making it 
 5. **ERROR_HANDLING.md** - Error handling guide
 6. **SUMMARY.md** - This summary document
 
-**Total Documentation**: ~100,000 characters across 6 comprehensive files
+**Total Documentation**: ~110,000 characters across 6 comprehensive files (4,523 lines)
 
 ---
 
