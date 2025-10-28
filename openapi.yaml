@@ -43,6 +43,8 @@ tags:
     description: Author information
   - name: Authentication
     description: User authentication
+  - name: Health
+    description: API health check
 
 paths:
   /books:
