@@ -1,0 +1,114 @@
+open api: 3.0.0
+info:
+  title: Movie Ticket Payment API
+  version: 1.0.0
+  description: API for processing movie ticket payments
+servers:
+  - url: https://api.movietickets.com/v1
+    description: Production server
+paths:
+  /payments:
+    post:
+      summary: Process a movie ticket payment for a reservation
+      description: Endpoint to process payments for movie tickets
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - reservationId
+                - amount
+                - paymentMethod
+              properties:
+                reservationId:
+                  type: string
+                  description: Unique identifier for the reservation
+                amount:
+                  type: number
+                  format: float
+                  description: Total amount to be paid
+                paymentMethod:
+                  type: string
+                  description: Method of payment (e.g., credit_card, paypal)
+                cardDetails:
+                  type: object
+                  properties:
+                    cardNumber:
+                      type: string
+                      description: Credit card number
+                    expiryDate:
+                      type: string
+                      description: Expiry date of the credit card
+                    cvv:
+                      type: string
+                      description: CVV code of the credit card
+      responses:
+        '200':
+          description: Payment processed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  paymentId:
+                    type: string
+                    description: Unique ID for the processed payment
+                  status:
+                    type: string
+                    description: Status of the payment (e.g., success, failed)
+        '400':
+          description: Bad request due to invalid input data
+        '500':
+          description: Internal server error during payment processing
+  /payments/{paymentId}:
+    get:
+      summary: Retrieve payment status by payment ID
+      description: Endpoint to get the status of a specific payment
+      parameters:
+        - name: paymentId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Unique identifier for the payment
+      responses:
+        '200':
+          description: Payment status retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  paymentId:
+                    type: string
+                    description: Unique ID for the payment
+                  status:
+                    type: string
+                    description: Status of the payment (e.g., success, failed)
+                  amount:
+                    type: number
+                    format: float
+                    description: Amount paid
+        '404':
+          description: Payment not found
+        '500':
+          description: Internal server error during retrieval
+    delete:
+      summary: Cancel a payment by payment ID
+      description: Endpoint to cancel a specific payment
+      parameters:
+        - name: paymentId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Unique identifier for the payment
+      responses:
+        '204':
+          description: Payment canceled successfully
+        '404':
+          description: Payment not found
+        '500':
+          description: Internal server error during cancellation
